@@ -4,9 +4,9 @@ import sys
 
 class UDPServer:
 
-    def __init__(self):
-        self.localIP = socket.gethostbyname(socket.gethostname())
-        self.localPort = 465
+    def __init__(self,ip,port):
+        self.localIP = ip
+        self.localPort = port
         self.bufferSize = 1024
         try:
             self.server = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
