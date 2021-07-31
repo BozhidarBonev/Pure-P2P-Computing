@@ -1,18 +1,47 @@
+
 import socket
+import subprocess
 import sys
 import pickle
-#from Node import Node
+import psutil
+import Node
+import LocalIP
+"""
+    ------Server Communication Channels----------
+
+        #-----General Channels-----#
+        # 1 - Check node activity
+
+
+
+        #-----BSP and Guardian Channels-----#
+        # 2 - Get connections from BSP at bootstrap(Join network)
+        # 3 - Should I become guardian?
+        # 4 - Announce becoming guardian
+        # 5 - Announce becoming BSP
+        # 6 - Can't become guardian, assign another one
+        # 7 - Send new guardian's IP to other guardians
+
+
+
+        #-----Work Channels-----#
+        # 7 - 
+        # 8 -
+
+"""
+
+
+
 class TCPServer:
 
-    def __init__(self,ip,port):
-        self.localPort = port
-        self.localIP = ip
+    def __init__(self):
+        self.localPort = 585
+        self.localIP = LocalIP.GetLocalIP()
+        print(self.localIP)
         self.bufferSize = 4096
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.node = Node()
 
     def Connect(self):
-        #Bind socket to local host and port
         try:
             self.server.bind((self.localIP,self.localPort))
         except socket.error as msg:
@@ -23,6 +52,7 @@ class TCPServer:
         self.server.close()
 
     def Listen(self):
+        node = Node.Node
         self.server.listen()
         while True:
             try:
@@ -30,34 +60,50 @@ class TCPServer:
                 data = pickle.loads(conn.recv(self.bufferSize))
                 print( "Client sent: {}".format(data) )
                 if not data:
-                    break
-                if data == 1:
+                    continue
+
+
+                #-----General Channels-----#
+                if data[0] == 1:
                     conn.send(pickle.dumps(1))
                     
-                if data == 2:
+
+
+
+                #-----BSP and Guardian Channels-----#
+                if data[0] == 2:
                     #MLW TO DO
                     pass
-                    connections = ["192.168.1.xx","10.0.0.xx"]
-                    conn.sendall(pickle.dumps(connections))
-                if data == 3:
-                    #Bootstapping Node TO DO
-                    conn.sendall("Received")
-                if data == 4:
+                if data[0] == 3:
+                    reply = node.CheckActiveGuards(addr)
+                    conn.sendall(pickle.dumps(reply))
+                if data[0] == 4:
                     #Bootstapping TO DO
                     conn.sendall("Received")
-                if data == 5:
+                if data[0] == 5:
                     #Bootstapping TO DO
                     conn.sendall("Received")
+                if data[0] == 6:
+                    #Bootstapping TO DO
+                    conn.sendall("Received")
+                if data[0] == 7:
+                    node.GetNewGuardian(data[1])
+
+
+
+                #-----Work Channels-----#
+
+
+                conn.close()
             except EOFError:
                 continue
             except socket.error:
                 print("Error")
-        conn.close()
         
       
 #TESTING PURPOSES            
 if __name__ == '__main__':
-    tcp = TCPServer("192.168.1.xx")
+    tcp = TCPServer()
     tcp.Connect()
     tcp.Listen()
     sys.exit()

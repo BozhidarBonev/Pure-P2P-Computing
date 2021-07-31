@@ -4,7 +4,8 @@ import sys
 
 class UDPClient:
 
-    def __init__(self):
+    def __init__(self,port):
+        self.port = port
         self.bufferSize = 1024
         try:
             self.client = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -13,9 +14,9 @@ class UDPClient:
             sys.exit()
 
 
-    def Send(self,msg,ip,port):
+    def Send(self,msg,ip):
         print("Sending message")
-        serverAddressPort   = (ip, port)
+        serverAddressPort   = (ip, self.port)
         bytesToSend = str.encode(msg)
         # Send to server using created UDP socket
         self.client.sendto(bytesToSend, serverAddressPort)

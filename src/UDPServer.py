@@ -1,12 +1,13 @@
 import socket
+import subprocess
 import sys
-
+import LocalIP
 
 class UDPServer:
 
     def __init__(self,ip,port):
-        self.localIP = ip
-        self.localPort = port
+        self.localIP = LocalIP.GetLocalIP()
+        self.localPort =465
         self.bufferSize = 1024
         try:
             self.server = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -15,6 +16,7 @@ class UDPServer:
             sys.exit()
         self.server.bind((self.localIP, self.localPort))
         self.bytesToSend = str.encode("Hello UDP Client")
+
 
     def Listen(self):
         print("UDP server up and listening")

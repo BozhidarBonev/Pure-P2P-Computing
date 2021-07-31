@@ -7,35 +7,29 @@ import requests
 import time
 import psutil
 import threading
+import subprocess
+import LocalIP
+
+def singleton(c):
+    return c()
+
+@singleton
 class Node:
 
     def __init__(self):
-        self.myIP =  self.GetLocalIP()
-        self.tcpPort = 585
-        self.udpPort = 465
-        self.udpServer = UDPServer(self.myIP,self.udpPort)
-        self.udpClient = UDPClient()
-        self.tcpServer = TCPServer(self.myIP,self.tcpPort)
-        self.tcpClient = TCPClient(self.tcpPort)
+        self.udpClient = UDPClient(465)
+        self.tcpClient = TCPClient(585)
         self.bootstrapDomain = "www.example.com"
         self.bootstrapIP = ""
         self.connections = []
         self.isBSP = False
         self.isGuardian = False
         self.guardians = []
+        self.ddnsProvider = ["https://dynupdate.no-ip.com/nic/update",443]
+        self.ddnsCreds = ["username","password"]
+        self.myIP = LocalIP.GetLocalIP()
         
     #REGULAR NODE CODE ----------------------------------------------------------------------------------------------------
-  
-    def GetLocalIP():
-        #TO DO
-        pass
-
-    def TCPServer(self):
-        self.tcpServer.Connect()
-        self.tcpServer.Listen()
-
-    def UDPServer(self):
-        self.udpServer.Listen()
 
     def BootstrapClient(self):
         self.bootstrapIP = socket.gethostbyname(self.bootstrapDomain)
@@ -63,29 +57,31 @@ class Node:
 
     def BecomeGuardian(self):
         if psutil.cpu_count()<= 2:
-            #TO DO
-            pass
+            self.tcpClient.Send(6,self.bootstrapIP)
         else:
             self.isGuardian = True
             self.bootstrapIP = socket.gethostbyname(self.bootstrapDomain)
             self.guardians = self.tcpClient.Send(4,self.bootstrapIP)
-            #TO DO
-            #launch thread on CheckGuards()
-            #launch thread on CheckBSP
-        
-
-    def BecomeBSP(self):
-        if self.isGuardian == True:
-            self.isBSP = True
-            self.UpdateDDNS()
-            for i in range(len(self.guardians)):
-                self.tcpClient.Send(5,self.guardians[i])
-
-    def UpdateDDNS(self):
-        #TO DO
-        pass
+            t1 = threading.Thread(target=self.CheckGuards)
+            t1.daemon = True
+            t2 = threading.Thread(target=self.CheckBSP)
+            t2.daemon = True
+            t1.start()
+            t2.start()
 
     #GUARDIANS CODE ----------------------------------------------------------------------------------------------------
+    def BecomeBSP(self):
+            if self.isGuardian == True:
+                self.isBSP = True
+                self.UpdateDDNS()
+                for i in range(len(self.guardians)):
+                    self.tcpClient.Send(5,self.guardians[i])
+
+    def UpdateDDNS(self):
+        #Must be exec no more than 1 time per minute
+        r = requests.get("http://{}:{}@dynupdate.no-ip.com/nic/update?hostname={}&myip={}".format(self.ddnsCreds[0],self.ddnsCreds[1],self.ddnsProvider,self.myIP))
+        if r.status_code != requests.codes.ok:
+            print(r.content)
 
     def CheckBSP(self):
         if self.isGuardian == True:
@@ -103,13 +99,43 @@ class Node:
                     time.sleep(3) # time interval between checks
                 
 
-    def CheckGuards():
-        #TO DO
-        pass
+    def CheckGuards(self):
+        if self.isGuardian == True:
+            while True:
+                self.bootstrapIP = socket.gethostbyname(self.bootstrapDomain)
+                reply = self.tcpClient.Send(3,self.bootstrapIP)
+                if reply==1:
+                    time.sleep(4) #seconds = random(maximum time needed to become guardian + random(n seconds))
+                    self.bootstrapIP = socket.gethostbyname(self.bootstrapDomain)
+                    reply = self.tcpClient.Send(3,self.bootstrapIP)
+                    if reply==1:
+                        #assign random peer as guardian
+                        pass
+
 
     def GetNewBSP(self,ip):
         if self.isGuardian == True:
             self.bootstrapIP = ip
 
+    def GetNewGuardian(self,addr):
+        if self.isGuardian == True:
+            self.guardians.append(addr)
 
-     #BOOTSTRAPPING NODE(BSP) CODE ----------------------------------------------------------------------------------------------------
+    #BOOTSTRAPPING NODE(BSP) CODE ----------------------------------------------------------------------------------------------------
+
+    def CheckActiveGuards(self,addr):
+        activeGuards = []
+        guardsNeeded = 5 #TO DO
+        for i in range(len(self.guardians)):
+            if self.guardians[i] != addr:
+                reply = self.tcpClient.Send(1,self.guardians[i])
+                if reply == 1:
+                    activeGuards.append(self.guardians[i])
+        if len(activeGuards) < guardsNeeded - 1:
+            return 1
+        else:
+            return 0
+
+    def AnnounceNewGuardian(self,addr):
+        for i in range(len(self.guardians)):
+            self.tcpClient.Send(7,addr,self.guardians[i])

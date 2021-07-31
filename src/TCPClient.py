@@ -2,15 +2,6 @@ import socket
 import sys
 import pickle
 import time
-    #------Server Communication Channels----------
-    # 1 - check if actiev
-    # 2 - get connections from BSP at bootstrap
-    # 3 - are there enough guardians?
-    # 4 - get guardians list
-    # 5 - tell guardians I am new BSP
-    # 6 - 
-    # 7 - 
-    # 8 -
 
 class TCPClient:
 
@@ -26,15 +17,17 @@ class TCPClient:
     def Disconnect(self):
         self.client.close()
 
-    def Send(self,msg,ip):
+    def Send(self,channel,msg,ip):
         try:
-            self.client.connect((ip,self.tcpPortort))
-            self.client.sendall(pickle.dumps(msg))
+            self.client.connect((ip,self.tcpPort))
+            self.client.sendall(pickle.dumps([channel,msg]))
             reply = pickle.loads(self.client.recv(self.bufferSize))
             print(reply)
             self.Disconnect()
             return reply
-        except socket.error as msg:
+        except EOFError:
+            pass
+        except socket.error:
             print ('Send/Connect Failed')
 
     #TO DO - NAT Traversal
@@ -42,6 +35,6 @@ class TCPClient:
 
 #TESTING PURPOSES              
 if __name__ == '__main__':
-    tcp = TCPClient()
-    tcp.Send(1,"192.168.1.xx",585)
+    tcp = TCPClient(585)
+    tcp.Send(7,"ko staa","192.168.1.12")
     tcp.Disconnect()
