@@ -19,8 +19,7 @@ import LocalIP
         # 3 - Should I become guardian?
         # 4 - Announce becoming guardian
         # 5 - Announce becoming BSP
-        # 6 - Can't become guardian, assign another one
-        # 7 - Send new guardian's IP to other guardians
+        # 6 - Send new guardian's IP to other guardians 
 
 
 
@@ -72,22 +71,20 @@ class TCPServer:
 
                 #-----BSP and Guardian Channels-----#
                 if data[0] == 2:
-                    #MLW TO DO
+                    #MLW
+                    #TO DO
                     pass
                 if data[0] == 3:
                     reply = node.CheckActiveGuards(addr)
                     conn.sendall(pickle.dumps(reply))
                 if data[0] == 4:
-                    #Bootstapping TO DO
-                    conn.sendall("Received")
+                    guards = node.GetGuardians()
+                    conn.sendall(pickle.dumps(guards))
+                    node.AnnounceNewGuardian(addr)
                 if data[0] == 5:
-                    #Bootstapping TO DO
-                    conn.sendall("Received")
+                    node.GetNewBSP(addr)
                 if data[0] == 6:
-                    #Bootstapping TO DO
-                    conn.sendall("Received")
-                if data[0] == 7:
-                    node.GetNewGuardian(data[1])
+                    node.AddNewGuardian(data[1])
 
 
 

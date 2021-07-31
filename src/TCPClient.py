@@ -5,9 +5,9 @@ import time
 
 class TCPClient:
 
-    def __init__(self,port):
+    def __init__(self):
         self.bufferSize = 4096
-        self.tcpPort = port
+        self.tcpPort = 585
         try:
             self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         except socket.error:

@@ -4,8 +4,8 @@ import sys
 
 class UDPClient:
 
-    def __init__(self,port):
-        self.port = port
+    def __init__(self):
+        self.port = 465
         self.bufferSize = 1024
         try:
             self.client = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
